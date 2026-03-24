@@ -37,10 +37,60 @@
 
     .header-top {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 10px;
       margin-bottom: 10px;
       padding: 0 16px;
+    }
+
+    #count-badge { margin-right: auto; }
+
+    .scope-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .scope-toggle-label {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+
+    .scope-toggle.on .scope-toggle-label { color: var(--accent); }
+
+    .toggle-track {
+      width: 30px;
+      height: 17px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      position: relative;
+      transition: border-color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .scope-toggle.on .toggle-track { border-color: var(--accent); }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 11px;
+      height: 11px;
+      background: var(--muted);
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .scope-toggle.on .toggle-thumb {
+      transform: translateX(13px);
+      background: var(--accent);
     }
 
     h1 {
@@ -98,6 +148,34 @@
     }
 
     .filter-btn:active { opacity: 0.7; }
+
+    .filter-sep {
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      color: #444;
+      font-size: 15px;
+      padding: 0 8px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .location-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0 12px;
+      height: 34px;
+      border-radius: 3px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      min-width: 200px;
+      flex-shrink: 0;
+    }
 
     /* --- mobile selects --- */
     .mobile-filters {
@@ -329,21 +407,28 @@
     <div class="header-top">
       <h1>Rick Owens</h1>
       <span id="count-badge">2nd Street NYC</span>
+      <div class="scope-toggle" id="scope-toggle" title="Show all store locations">
+        <span class="scope-toggle-label">All Stores</span>
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      </div>
     </div>
     <div class="filter-rows">
       <div class="filter-row">
         <button class="filter-btn active" data-filter="all">All</button>
         <button class="filter-btn" data-filter="RICK OWENS DRKSHDW">DRKSHDW</button>
         <button class="filter-btn" data-filter="RICK OWENS LILIES">Lilies</button>
-        <button class="filter-btn" data-filter="available">In Stock</button>
-      </div>
-      <div class="filter-row" style="margin-top:6px">
+<span class="filter-sep">|</span>
         <button class="filter-btn active" data-sort="newest">Newest</button>
         <button class="filter-btn" data-sort="price-asc">Price ↑</button>
         <button class="filter-btn" data-sort="price-desc">Price ↓</button>
+        <span class="filter-sep">|</span>
+        <button class="filter-btn" data-type="shoes">Shoes</button>
+        <button class="filter-btn" data-type="tops">Tops</button>
+        <button class="filter-btn" data-type="bottoms">Bottoms</button>
+        <button class="filter-btn" data-type="accessories">Accessories</button>
       </div>
       <div class="filter-row" id="location-row" style="margin-top:6px">
-        <button class="filter-btn active" data-location="all">All Locations</button>
+        <button class="filter-btn active" data-location="all">All NYC</button>
       </div>
     </div>
     <div class="mobile-filters">
@@ -351,15 +436,21 @@
         <option value="all">All</option>
         <option value="RICK OWENS DRKSHDW">DRKSHDW</option>
         <option value="RICK OWENS LILIES">Lilies</option>
-        <option value="available">In Stock</option>
       </select>
       <select id="m-sort-select">
         <option value="newest">Newest</option>
         <option value="price-asc">Price ↑</option>
         <option value="price-desc">Price ↓</option>
       </select>
+      <select id="m-type-select">
+        <option value="all">Type</option>
+        <option value="shoes">Shoes</option>
+        <option value="tops">Tops</option>
+        <option value="bottoms">Bottoms</option>
+        <option value="accessories">Accessories</option>
+      </select>
       <select id="m-location-select">
-        <option value="all">Location</option>
+        <option value="all">All NYC</option>
       </select>
     </div>
   </header>
@@ -376,11 +467,24 @@
   <script>
     const BASE = 'https://ec.2ndstreetusa.com';
     const STORE_PREFIX = '2nd street ';
+    const NYC_LOCATIONS = [
+      { value: 'chelsea',          label: 'Chelsea' },
+      { value: 'dumbo',            label: 'Dumbo' },
+      { value: 'lower east side',  label: 'Lower East Side' },
+      { value: 'noho',             label: 'NoHo' },
+      { value: 'soho',             label: 'SoHo' },
+      { value: 'upper east side',  label: 'Upper East Side' },
+      { value: 'upper west side',  label: 'Upper West Side' },
+      { value: 'williamsburg',     label: 'Williamsburg' },
+    ];
+    const NYC_LOCATION_VALUES = new Set(NYC_LOCATIONS.map(l => l.value));
 
     let allProducts = [];
     let activeFilter = 'all';
     let activeSort = 'newest';
+    let activeType = 'all';
     let activeLocation = 'all';
+    let nycOnly = true;
 
     // Fetch all pages
     async function fetchAll() {
@@ -412,11 +516,21 @@
       return products;
     }
 
+    function getSimpleType(product) {
+      const seg = (product.product_type || '').split(' - ');
+      const cat = (seg[1] || '').toLowerCase();
+      if (cat.includes('shoes') || cat.includes('boots')) return 'shoes';
+      if (cat.includes('bottom') || cat.includes('skirt') || cat.includes('dress')) return 'bottoms';
+      if (cat.includes('bags') || cat.includes('eyewear') || cat.includes('headwear') || cat.includes('fashion goods')) return 'accessories';
+      if ((seg[0] || '').toLowerCase() === 'clothing') return 'tops';
+      return null;
+    }
+
     function extractStore(product) {
       const tag = (product.tags || []).find(t =>
         t.toLowerCase().startsWith(STORE_PREFIX)
       );
-      return tag ? tag.slice('2nd STREET '.length).trim() : '';
+      return tag ? tag.slice(STORE_PREFIX.length).trim().toLowerCase() : '';
     }
 
     function getPrice(product) {
@@ -437,16 +551,20 @@
     function applyFilters(products) {
       let list = [...products];
 
-      if (activeFilter === 'available') {
-        list = list.filter(p => isAvailable(p));
-      } else if (activeFilter !== 'all') {
+      if (activeFilter !== 'all') {
         list = list.filter(p =>
           p.vendor && p.vendor.toUpperCase() === activeFilter
         );
       }
 
+      if (activeType !== 'all') {
+        list = list.filter(p => getSimpleType(p) === activeType);
+      }
+
       if (activeLocation !== 'all') {
         list = list.filter(p => extractStore(p) === activeLocation);
+      } else if (nycOnly) {
+        list = list.filter(p => NYC_LOCATION_VALUES.has(extractStore(p)));
       }
 
       if (activeSort === 'newest') {
@@ -535,10 +653,11 @@
         .then(products => {
           allProducts = products;
           status.style.display = 'none';
-          buildLocationButtons(allProducts);
+          // Rebuild location UI now that we have data (needed for all-stores mode)
+          buildLocationButtons();
           const filtered = applyFilters(allProducts);
           renderGrid(filtered);
-          updateCount(filtered.length, allProducts.length);
+          updateCount(filtered.length, scopeTotal());
         })
         .catch(err => {
           status.style.display = 'none';
@@ -547,43 +666,121 @@
         });
     }
 
-    function buildLocationButtons(products) {
-      const stores = [...new Set(products.map(p => extractStore(p)).filter(Boolean))].sort();
+    function buildLocationButtons() {
+      const allLabel = nycOnly ? 'All NYC' : 'All Locations';
+      const locations = nycOnly
+        ? NYC_LOCATIONS
+        : [...new Set(allProducts.map(p => extractStore(p)).filter(Boolean))].sort()
+            .map(v => ({ value: v, label: v.replace(/\b\w/g, c => c.toUpperCase()) }));
 
-      // Desktop buttons
+      // Desktop
       const row = document.getElementById('location-row');
-      row.querySelectorAll('[data-location]:not([data-location="all"])').forEach(b => b.remove());
-      stores.forEach(store => {
-        const btn = document.createElement('button');
-        btn.className = 'filter-btn';
-        btn.dataset.location = store;
-        btn.textContent = store;
-        row.appendChild(btn);
-      });
-      row.querySelectorAll('[data-location]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          row.querySelectorAll('[data-location]').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          activeLocation = btn.dataset.location;
+      row.innerHTML = '';
+
+      if (nycOnly) {
+        // Button row for NYC (small, known set)
+        const allBtn = document.createElement('button');
+        allBtn.className = 'filter-btn' + (activeLocation === 'all' ? ' active' : '');
+        allBtn.dataset.location = 'all';
+        allBtn.textContent = allLabel;
+        row.appendChild(allBtn);
+
+        locations.forEach(({ value, label }) => {
+          const btn = document.createElement('button');
+          btn.className = 'filter-btn' + (activeLocation === value ? ' active' : '');
+          btn.dataset.location = value;
+          btn.textContent = label;
+          row.appendChild(btn);
+        });
+
+        row.querySelectorAll('[data-location]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            row.querySelectorAll('[data-location]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeLocation = btn.dataset.location;
+            updateURL();
+            rerender();
+          });
+        });
+      } else {
+        // Styled select for all stores (large, dynamic set)
+        const sel = document.createElement('select');
+        sel.className = 'location-select';
+        sel.innerHTML = `<option value="all">${allLabel}</option>`;
+        locations.forEach(({ value, label }) => {
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.textContent = label;
+          sel.appendChild(opt);
+        });
+        sel.value = activeLocation;
+        sel.addEventListener('change', e => {
+          activeLocation = e.target.value;
+          updateURL();
           rerender();
         });
-      });
+        row.appendChild(sel);
+      }
 
-      // Mobile select
-      const sel = document.getElementById('m-location-select');
-      sel.innerHTML = '<option value="all">Location</option>';
-      stores.forEach(store => {
+      // Mobile select (always a select)
+      const mSel = document.getElementById('m-location-select');
+      mSel.innerHTML = `<option value="all">${allLabel}</option>`;
+      locations.forEach(({ value, label }) => {
         const opt = document.createElement('option');
-        opt.value = store;
-        opt.textContent = store;
-        sel.appendChild(opt);
+        opt.value = value;
+        opt.textContent = label;
+        mSel.appendChild(opt);
       });
+      mSel.value = activeLocation;
+    }
+
+    // --- URL state ---
+    function readStateFromURL() {
+      const p = new URLSearchParams(location.search);
+      activeFilter   = p.get('filter')   || 'all';
+      activeSort     = p.get('sort')     || 'newest';
+      activeType     = p.get('type')     || 'all';
+      activeLocation = p.get('location') || 'all';
+      nycOnly        = p.get('scope')    !== 'all';
+    }
+
+    function updateURL() {
+      const p = new URLSearchParams();
+      if (activeFilter   !== 'all')    p.set('filter',   activeFilter);
+      if (activeSort     !== 'newest') p.set('sort',     activeSort);
+      if (activeType     !== 'all')    p.set('type',     activeType);
+      if (activeLocation !== 'all')    p.set('location', activeLocation);
+      if (!nycOnly)                    p.set('scope',    'all');
+      const qs = p.toString();
+      history.replaceState(null, '', qs ? '?' + qs : location.pathname);
+    }
+
+    function syncFilterUI() {
+      document.querySelectorAll('[data-filter]').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.filter === activeFilter)
+      );
+      document.querySelectorAll('[data-sort]').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.sort === activeSort)
+      );
+      document.querySelectorAll('[data-type]').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.type === activeType)
+      );
+      document.getElementById('m-filter-select').value = activeFilter;
+      document.getElementById('m-sort-select').value = activeSort;
+      document.getElementById('m-type-select').value = activeType;
+      document.getElementById('scope-toggle').classList.toggle('on', !nycOnly);
+    }
+
+    function scopeTotal() {
+      return nycOnly
+        ? allProducts.filter(p => NYC_LOCATION_VALUES.has(extractStore(p))).length
+        : allProducts.length;
     }
 
     function rerender() {
       const filtered = applyFilters(allProducts);
       renderGrid(filtered);
-      updateCount(filtered.length, allProducts.length);
+      updateCount(filtered.length, scopeTotal());
     }
 
     // Desktop filter buttons
@@ -592,6 +789,7 @@
         document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeFilter = btn.dataset.filter;
+        updateURL();
         rerender();
       });
     });
@@ -602,6 +800,20 @@
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeSort = btn.dataset.sort;
+        updateURL();
+        rerender();
+      });
+    });
+
+    // Desktop type buttons
+    document.querySelectorAll('[data-type]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const next = btn.dataset.type === activeType ? 'all' : btn.dataset.type;
+        document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+        if (next !== 'all') btn.classList.add('active');
+        activeType = next;
+        document.getElementById('m-type-select').value = activeType;
+        updateURL();
         rerender();
       });
     });
@@ -609,16 +821,39 @@
     // Mobile selects
     document.getElementById('m-filter-select').addEventListener('change', e => {
       activeFilter = e.target.value;
+      updateURL();
       rerender();
     });
     document.getElementById('m-sort-select').addEventListener('change', e => {
       activeSort = e.target.value;
+      updateURL();
+      rerender();
+    });
+    document.getElementById('m-type-select').addEventListener('change', e => {
+      activeType = e.target.value;
+      updateURL();
       rerender();
     });
     document.getElementById('m-location-select').addEventListener('change', e => {
       activeLocation = e.target.value;
+      updateURL();
       rerender();
     });
+
+    // Scope toggle (NYC only ↔ all stores)
+    document.getElementById('scope-toggle').addEventListener('click', () => {
+      nycOnly = !nycOnly;
+      activeLocation = 'all';
+      document.getElementById('scope-toggle').classList.toggle('on', !nycOnly);
+      updateURL();
+      buildLocationButtons();
+      rerender();
+    });
+
+    // Restore state from URL, then sync UI before first render
+    readStateFromURL();
+    syncFilterUI();
+    buildLocationButtons();
 
     // Initial load
     refresh();
