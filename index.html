@@ -57,19 +57,21 @@
       letter-spacing: 0.04em;
     }
 
+    /* --- desktop button rows --- */
+    .filter-rows {
+      display: none;
+    }
+
     .filter-row {
       display: flex;
       gap: 6px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
-      padding: 0 16px 0;
+      padding: 0 16px;
     }
 
-    .filter-row + .filter-row {
-      margin-top: 6px;
-    }
-
+    .filter-row + .filter-row { margin-top: 6px; }
     .filter-row::-webkit-scrollbar { display: none; }
 
     .filter-btn {
@@ -95,8 +97,35 @@
       color: var(--accent);
     }
 
-    .filter-btn:active {
-      opacity: 0.7;
+    .filter-btn:active { opacity: 0.7; }
+
+    /* --- mobile selects --- */
+    .mobile-filters {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px;
+    }
+
+    .mobile-filters select {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0 8px;
+      height: 34px;
+      border-radius: 3px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    @media (min-width: 769px) {
+      .filter-rows { display: block; }
+      .mobile-filters { display: none; }
     }
 
     main {
@@ -301,19 +330,37 @@
       <h1>Rick Owens</h1>
       <span id="count-badge">2nd Street NYC</span>
     </div>
-    <div class="filter-row">
-      <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="RICK OWENS DRKSHDW">DRKSHDW</button>
-      <button class="filter-btn" data-filter="RICK OWENS LILIES">Lilies</button>
-      <button class="filter-btn" data-filter="available">In Stock</button>
+    <div class="filter-rows">
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="RICK OWENS DRKSHDW">DRKSHDW</button>
+        <button class="filter-btn" data-filter="RICK OWENS LILIES">Lilies</button>
+        <button class="filter-btn" data-filter="available">In Stock</button>
+      </div>
+      <div class="filter-row" style="margin-top:6px">
+        <button class="filter-btn active" data-sort="newest">Newest</button>
+        <button class="filter-btn" data-sort="price-asc">Price ↑</button>
+        <button class="filter-btn" data-sort="price-desc">Price ↓</button>
+      </div>
+      <div class="filter-row" id="location-row" style="margin-top:6px">
+        <button class="filter-btn active" data-location="all">All Locations</button>
+      </div>
     </div>
-    <div class="filter-row">
-      <button class="filter-btn active" data-sort="newest">Newest</button>
-      <button class="filter-btn" data-sort="price-asc">Price ↑</button>
-      <button class="filter-btn" data-sort="price-desc">Price ↓</button>
-    </div>
-    <div class="filter-row" id="location-row">
-      <button class="filter-btn active" data-location="all">All Locations</button>
+    <div class="mobile-filters">
+      <select id="m-filter-select">
+        <option value="all">All</option>
+        <option value="RICK OWENS DRKSHDW">DRKSHDW</option>
+        <option value="RICK OWENS LILIES">Lilies</option>
+        <option value="available">In Stock</option>
+      </select>
+      <select id="m-sort-select">
+        <option value="newest">Newest</option>
+        <option value="price-asc">Price ↑</option>
+        <option value="price-desc">Price ↓</option>
+      </select>
+      <select id="m-location-select">
+        <option value="all">Location</option>
+      </select>
     </div>
   </header>
 
@@ -520,8 +567,9 @@
 
     function buildLocationButtons(products) {
       const stores = [...new Set(products.map(p => extractStore(p)).filter(Boolean))].sort();
+
+      // Desktop buttons
       const row = document.getElementById('location-row');
-      // Remove all except "All Locations"
       row.querySelectorAll('[data-location]:not([data-location="all"])').forEach(b => b.remove());
       stores.forEach(store => {
         const btn = document.createElement('button');
@@ -535,35 +583,59 @@
           row.querySelectorAll('[data-location]').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           activeLocation = btn.dataset.location;
-          const filtered = applyFilters(allProducts);
-          renderGrid(filtered);
-          updateCount(filtered.length, allProducts.length);
+          rerender();
         });
+      });
+
+      // Mobile select
+      const sel = document.getElementById('m-location-select');
+      sel.innerHTML = '<option value="all">Location</option>';
+      stores.forEach(store => {
+        const opt = document.createElement('option');
+        opt.value = store;
+        opt.textContent = store;
+        sel.appendChild(opt);
       });
     }
 
-    // Filter buttons
+    function rerender() {
+      const filtered = applyFilters(allProducts);
+      renderGrid(filtered);
+      updateCount(filtered.length, allProducts.length);
+    }
+
+    // Desktop filter buttons
     document.querySelectorAll('[data-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeFilter = btn.dataset.filter;
-        const filtered = applyFilters(allProducts);
-        renderGrid(filtered);
-        updateCount(filtered.length, allProducts.length);
+        rerender();
       });
     });
 
-    // Sort buttons
+    // Desktop sort buttons
     document.querySelectorAll('[data-sort]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeSort = btn.dataset.sort;
-        const filtered = applyFilters(allProducts);
-        renderGrid(filtered);
-        updateCount(filtered.length, allProducts.length);
+        rerender();
       });
+    });
+
+    // Mobile selects
+    document.getElementById('m-filter-select').addEventListener('change', e => {
+      activeFilter = e.target.value;
+      rerender();
+    });
+    document.getElementById('m-sort-select').addEventListener('change', e => {
+      activeSort = e.target.value;
+      rerender();
+    });
+    document.getElementById('m-location-select').addEventListener('change', e => {
+      activeLocation = e.target.value;
+      rerender();
     });
 
     // Initial load
