@@ -375,10 +375,7 @@
 
   <script>
     const BASE = 'https://ec.2ndstreetusa.com';
-    const NYC_STORES = [
-      'Chelsea','Dumbo','Lower East Side','NoHo','SoHo',
-      'Upper East Side','Upper West Side','Williamsburg'
-    ];
+    const STORE_PREFIX = '2nd street ';
 
     let allProducts = [];
     let activeFilter = 'all';
@@ -404,16 +401,7 @@
           p.vendor && p.vendor.toLowerCase().includes('rick owens')
         );
 
-        // Filter: at least one NYC store tag
-        const nyc = ro.filter(p => {
-          const tags = (p.tags || []).map(t => t.toLowerCase());
-          return NYC_STORES.some(store =>
-            tags.some(t => t.includes(store.toLowerCase()))
-          );
-        });
-
-        // Fall back to all RO items if none match NYC tags
-        products.push(...(nyc.length ? nyc : ro));
+        products.push(...ro);
 
         if (batch.length < limit) break;
         page++;
@@ -425,16 +413,10 @@
     }
 
     function extractStore(product) {
-      const tags = product.tags || [];
-      const match = tags.find(t =>
-        NYC_STORES.some(s => t.toLowerCase().includes(s.toLowerCase()))
+      const tag = (product.tags || []).find(t =>
+        t.toLowerCase().startsWith(STORE_PREFIX)
       );
-      if (!match) return '';
-      // Clean up tag to just the store name
-      for (const store of NYC_STORES) {
-        if (match.toLowerCase().includes(store.toLowerCase())) return store;
-      }
-      return match;
+      return tag ? tag.slice('2nd STREET '.length).trim() : '';
     }
 
     function getPrice(product) {
