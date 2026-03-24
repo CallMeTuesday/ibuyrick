@@ -32,7 +32,7 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      padding: 14px 16px 12px;
+      padding: 12px 0 12px;
     }
 
     .header-top {
@@ -40,6 +40,7 @@
       align-items: baseline;
       gap: 10px;
       margin-bottom: 10px;
+      padding: 0 16px;
     }
 
     h1 {
@@ -56,36 +57,37 @@
       letter-spacing: 0.04em;
     }
 
-    .filters {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
     .filter-row {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
-      padding-bottom: 2px;
+      padding: 0 16px 0;
+    }
+
+    .filter-row + .filter-row {
+      margin-top: 6px;
     }
 
     .filter-row::-webkit-scrollbar { display: none; }
-    .filter-row .filter-btn { flex-shrink: 0; }
 
     .filter-btn {
+      flex-shrink: 0;
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--muted);
       font-size: 11px;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      padding: 5px 10px;
+      padding: 0 12px;
+      height: 34px;
       border-radius: 3px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: border-color 0.15s, color 0.15s;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
     }
 
     .filter-btn.active {
@@ -95,20 +97,6 @@
 
     .filter-btn:active {
       opacity: 0.7;
-    }
-
-    #sort-select {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 5px 10px;
-      border-radius: 3px;
-      cursor: pointer;
-      appearance: none;
-      -webkit-appearance: none;
     }
 
     main {
@@ -313,18 +301,18 @@
       <h1>Rick Owens</h1>
       <span id="count-badge">2nd Street NYC</span>
     </div>
-    <div class="filters">
+    <div class="filter-row">
       <button class="filter-btn active" data-filter="all">All</button>
       <button class="filter-btn" data-filter="RICK OWENS DRKSHDW">DRKSHDW</button>
       <button class="filter-btn" data-filter="RICK OWENS LILIES">Lilies</button>
       <button class="filter-btn" data-filter="available">In Stock</button>
-      <select id="sort-select">
-        <option value="newest">Newest</option>
-        <option value="price-asc">Price ↑</option>
-        <option value="price-desc">Price ↓</option>
-      </select>
     </div>
-    <div class="filter-row" id="location-row" style="margin-top:8px">
+    <div class="filter-row">
+      <button class="filter-btn active" data-sort="newest">Newest</button>
+      <button class="filter-btn" data-sort="price-asc">Price ↑</button>
+      <button class="filter-btn" data-sort="price-desc">Price ↓</button>
+    </div>
+    <div class="filter-row" id="location-row">
       <button class="filter-btn active" data-location="all">All Locations</button>
     </div>
   </header>
@@ -566,12 +554,16 @@
       });
     });
 
-    // Sort select
-    document.getElementById('sort-select').addEventListener('change', e => {
-      activeSort = e.target.value;
-      const filtered = applyFilters(allProducts);
-      renderGrid(filtered);
-      updateCount(filtered.length, allProducts.length);
+    // Sort buttons
+    document.querySelectorAll('[data-sort]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeSort = btn.dataset.sort;
+        const filtered = applyFilters(allProducts);
+        renderGrid(filtered);
+        updateCount(filtered.length, allProducts.length);
+      });
     });
 
     // Initial load
