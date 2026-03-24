@@ -62,6 +62,18 @@
       flex-wrap: wrap;
     }
 
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-row .filter-btn { flex-shrink: 0; }
+
     .filter-btn {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -298,6 +310,9 @@
         <option value="price-desc">Price ↓</option>
       </select>
     </div>
+    <div class="filter-row" id="location-row" style="margin-top:8px">
+      <button class="filter-btn active" data-location="all">All Locations</button>
+    </div>
   </header>
 
   <main>
@@ -319,6 +334,7 @@
     let allProducts = [];
     let activeFilter = 'all';
     let activeSort = 'newest';
+    let activeLocation = 'all';
 
     // Fetch all pages
     async function fetchAll() {
@@ -396,6 +412,10 @@
         list = list.filter(p =>
           p.vendor && p.vendor.toUpperCase() === activeFilter
         );
+      }
+
+      if (activeLocation !== 'all') {
+        list = list.filter(p => extractStore(p) === activeLocation);
       }
 
       if (activeSort === 'newest') {
@@ -484,6 +504,7 @@
         .then(products => {
           allProducts = products;
           status.style.display = 'none';
+          buildLocationButtons(allProducts);
           const filtered = applyFilters(allProducts);
           renderGrid(filtered);
           updateCount(filtered.length, allProducts.length);
@@ -495,10 +516,34 @@
         });
     }
 
+    function buildLocationButtons(products) {
+      const stores = [...new Set(products.map(p => extractStore(p)).filter(Boolean))].sort();
+      const row = document.getElementById('location-row');
+      // Remove all except "All Locations"
+      row.querySelectorAll('[data-location]:not([data-location="all"])').forEach(b => b.remove());
+      stores.forEach(store => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        btn.dataset.location = store;
+        btn.textContent = store;
+        row.appendChild(btn);
+      });
+      row.querySelectorAll('[data-location]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('[data-location]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeLocation = btn.dataset.location;
+          const filtered = applyFilters(allProducts);
+          renderGrid(filtered);
+          updateCount(filtered.length, allProducts.length);
+        });
+      });
+    }
+
     // Filter buttons
-    document.querySelectorAll('.filter-btn').forEach(btn => {
+    document.querySelectorAll('[data-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeFilter = btn.dataset.filter;
         const filtered = applyFilters(allProducts);
