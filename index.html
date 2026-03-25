@@ -217,6 +217,22 @@
       -webkit-appearance: none;
     }
 
+    #map-bar {
+      padding: 6px 16px 0;
+      display: none;
+    }
+
+    #map-bar a {
+      font-size: 10px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    #map-bar a:hover { color: var(--accent); }
+
     @media (min-width: 769px) {
       .filter-rows { display: block; }
       .mobile-filters { display: none; }
@@ -475,6 +491,7 @@
         <option value="all">All NYC</option>
       </select>
     </div>
+    <div id="map-bar"><a id="map-link" href="" target="_blank" rel="noopener noreferrer"></a></div>
   </header>
 
   <main>
@@ -490,14 +507,14 @@
     const BASE = 'https://ec.2ndstreetusa.com';
     const STORE_PREFIX = '2nd street ';
     const NYC_LOCATIONS = [
-      { value: 'chelsea',          label: 'Chelsea' },
-      { value: 'dumbo',            label: 'Dumbo' },
-      { value: 'lower east side',  label: 'Lower East Side' },
-      { value: 'noho',             label: 'NoHo' },
-      { value: 'soho',             label: 'SoHo' },
-      { value: 'upper east side',  label: 'Upper East Side' },
-      { value: 'upper west side',  label: 'Upper West Side' },
-      { value: 'williamsburg',     label: 'Williamsburg' },
+      { value: 'chelsea',          label: 'Chelsea',          address: '142 W 26th St, New York, NY 10001',      maps: 'https://www.google.com/maps/search/142+W+26th+St+New+York+NY+10001' },
+      { value: 'dumbo',            label: 'Dumbo',            address: '70 Front St, Brooklyn, NY 11201',        maps: 'https://www.google.com/maps/search/70+Front+St+Brooklyn+NY+11201' },
+      { value: 'lower east side',  label: 'Lower East Side',  address: '180 Orchard St, New York, NY 10002',     maps: 'https://www.google.com/maps/search/180+Orchard+St+New+York+NY+10002' },
+      { value: 'noho',             label: 'NoHo',             address: '712 Broadway, New York, NY 10003',       maps: 'https://www.google.com/maps/search/712+Broadway+New+York+NY+10003' },
+      { value: 'soho',             label: 'SoHo',             address: '27 Howard St, New York, NY 10013',       maps: 'https://www.google.com/maps/search/27+Howard+St+New+York+NY+10013' },
+      { value: 'upper east side',  label: 'Upper East Side',  address: '1282 3rd Ave, New York, NY 10021',       maps: 'https://www.google.com/maps/search/1282+3rd+Ave+New+York+NY+10021' },
+      { value: 'upper west side',  label: 'Upper West Side',  address: '2519 Broadway, New York, NY 10025',      maps: 'https://www.google.com/maps/search/2519+Broadway+New+York+NY+10025' },
+      { value: 'williamsburg',     label: 'Williamsburg',     address: '187 Kent Ave, Brooklyn, NY 11249',       maps: 'https://www.google.com/maps/search/187+Kent+Ave+Brooklyn+NY+11249' },
     ];
     const NYC_LOCATION_VALUES = new Set(NYC_LOCATIONS.map(l => l.value));
 
@@ -721,6 +738,7 @@
             btn.classList.add('active');
             activeLocation = btn.dataset.location;
             updateURL();
+            updateMapBar();
             rerender();
           });
         });
@@ -739,6 +757,7 @@
         sel.addEventListener('change', e => {
           activeLocation = e.target.value;
           updateURL();
+          updateMapBar();
           rerender();
         });
         row.appendChild(sel);
@@ -775,6 +794,21 @@
       if (!nycOnly)                    p.set('scope',    'all');
       const qs = p.toString();
       history.replaceState(null, '', qs ? '?' + qs : location.pathname);
+    }
+
+    function updateMapBar() {
+      const bar = document.getElementById('map-bar');
+      const link = document.getElementById('map-link');
+      const loc = nycOnly && activeLocation !== 'all'
+        ? NYC_LOCATIONS.find(l => l.value === activeLocation)
+        : null;
+      if (loc) {
+        link.href = loc.maps;
+        link.textContent = loc.address;
+        bar.style.display = 'block';
+      } else {
+        bar.style.display = 'none';
+      }
     }
 
     function syncFilterUI() {
@@ -859,6 +893,7 @@
     document.getElementById('m-location-select').addEventListener('change', e => {
       activeLocation = e.target.value;
       updateURL();
+      updateMapBar();
       rerender();
     });
 
@@ -868,6 +903,7 @@
       activeLocation = 'all';
       document.getElementById('scope-toggle').classList.toggle('on', !nycOnly);
       updateURL();
+      updateMapBar();
       buildLocationButtons();
       rerender();
     });
@@ -875,6 +911,7 @@
     // Restore state from URL, then sync UI before first render
     readStateFromURL();
     syncFilterUI();
+    updateMapBar();
     buildLocationButtons();
 
     // Initial load
