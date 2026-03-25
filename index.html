@@ -907,7 +907,8 @@
 
     async function getCurrentSubscription() {
       if (!('serviceWorker' in navigator)) return null;
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await navigator.serviceWorker.getRegistration('./sw.js');
+      if (!reg) return null;
       return reg.pushManager.getSubscription();
     }
 
