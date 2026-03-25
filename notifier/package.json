@@ -1,15 +1,17 @@
 {
   "name": "ibuyrick-notifier",
   "version": "1.0.0",
-  "description": "Polls 2nd Street for new Rick Owens items and sends ntfy.sh notifications",
+  "description": "Polls 2nd Street for new Rick Owens items and sends Web Push notifications",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "keys": "npx web-push generate-vapid-keys"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "pg": "^8.13.3"
+    "pg": "^8.13.3",
+    "web-push": "^3.6.7"
   }
 }

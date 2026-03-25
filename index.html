@@ -45,6 +45,22 @@
 
     #count-badge { margin-right: auto; }
 
+    .bell-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      transition: color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .bell-btn.subscribed { color: var(--accent); }
+    .bell-btn:active { opacity: 0.6; }
+
     .scope-toggle {
       display: flex;
       align-items: center;
@@ -407,6 +423,12 @@
     <div class="header-top">
       <h1>Rick Owens</h1>
       <span id="count-badge">2nd Street NYC</span>
+      <button class="bell-btn" id="bell-btn" title="Subscribe to new item alerts" style="display:none" aria-label="Subscribe to notifications">
+        <svg id="bell-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </button>
       <div class="scope-toggle" id="scope-toggle" title="Show all store locations">
         <span class="scope-toggle-label">All Stores</span>
         <div class="toggle-track"><div class="toggle-thumb"></div></div>
@@ -857,6 +879,94 @@
 
     // Initial load
     refresh();
+
+  </script>
+  <script>
+    // --- Push notification subscription ---
+    // Set NOTIFIER_URL after deploying the notifier service to Railway
+    const NOTIFIER_URL = '';
+
+    function urlBase64ToUint8Array(b64) {
+      const pad = '='.repeat((4 - b64.length % 4) % 4);
+      const base64 = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(base64);
+      return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    }
+
+    const bellBtn = document.getElementById('bell-btn');
+    const bellIcon = document.getElementById('bell-icon');
+
+    const BELL_OUTLINE = `<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>`;
+    const BELL_FILLED = `<path fill="currentColor" stroke="none" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>`;
+
+    async function getVapidKey() {
+      const res = await fetch(`${NOTIFIER_URL}/vapid-public-key`);
+      const { key } = await res.json();
+      return key;
+    }
+
+    async function getCurrentSubscription() {
+      if (!('serviceWorker' in navigator)) return null;
+      const reg = await navigator.serviceWorker.ready;
+      return reg.pushManager.getSubscription();
+    }
+
+    async function initBell() {
+      if (!NOTIFIER_URL || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      bellBtn.style.display = 'flex';
+      const sub = await getCurrentSubscription();
+      setBellState(!!sub);
+    }
+
+    function setBellState(subscribed) {
+      bellIcon.innerHTML = subscribed ? BELL_FILLED : BELL_OUTLINE;
+      bellBtn.classList.toggle('subscribed', subscribed);
+      bellBtn.title = subscribed ? 'Unsubscribe from alerts' : 'Subscribe to new item alerts';
+    }
+
+    bellBtn.addEventListener('click', async () => {
+      bellBtn.disabled = true;
+      try {
+        const existing = await getCurrentSubscription();
+
+        if (existing) {
+          await fetch(`${NOTIFIER_URL}/unsubscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: existing.endpoint }),
+          });
+          await existing.unsubscribe();
+          setBellState(false);
+        } else {
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted') return;
+
+          const [reg, vapidKey] = await Promise.all([
+            navigator.serviceWorker.register('./sw.js'),
+            getVapidKey(),
+          ]);
+
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          });
+
+          await fetch(`${NOTIFIER_URL}/subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sub),
+          });
+
+          setBellState(true);
+        }
+      } catch (err) {
+        console.error('Bell error:', err);
+      } finally {
+        bellBtn.disabled = false;
+      }
+    });
+
+    initBell();
   </script>
 </body>
 </html>
