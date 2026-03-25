@@ -507,16 +507,92 @@
     const BASE = 'https://ec.2ndstreetusa.com';
     const STORE_PREFIX = '2nd street ';
     const NYC_LOCATIONS = [
-      { value: 'chelsea',          label: 'Chelsea',          address: '142 W 26th St, New York, NY 10001',      maps: 'https://www.google.com/maps/search/142+W+26th+St+New+York+NY+10001' },
-      { value: 'dumbo',            label: 'Dumbo',            address: '70 Front St, Brooklyn, NY 11201',        maps: 'https://www.google.com/maps/search/70+Front+St+Brooklyn+NY+11201' },
-      { value: 'lower east side',  label: 'Lower East Side',  address: '180 Orchard St, New York, NY 10002',     maps: 'https://www.google.com/maps/search/180+Orchard+St+New+York+NY+10002' },
-      { value: 'noho',             label: 'NoHo',             address: '712 Broadway, New York, NY 10003',       maps: 'https://www.google.com/maps/search/712+Broadway+New+York+NY+10003' },
-      { value: 'soho',             label: 'SoHo',             address: '27 Howard St, New York, NY 10013',       maps: 'https://www.google.com/maps/search/27+Howard+St+New+York+NY+10013' },
-      { value: 'upper east side',  label: 'Upper East Side',  address: '1282 3rd Ave, New York, NY 10021',       maps: 'https://www.google.com/maps/search/1282+3rd+Ave+New+York+NY+10021' },
-      { value: 'upper west side',  label: 'Upper West Side',  address: '2519 Broadway, New York, NY 10025',      maps: 'https://www.google.com/maps/search/2519+Broadway+New+York+NY+10025' },
-      { value: 'williamsburg',     label: 'Williamsburg',     address: '187 Kent Ave, Brooklyn, NY 11249',       maps: 'https://www.google.com/maps/search/187+Kent+Ave+Brooklyn+NY+11249' },
+      { value: 'chelsea',             label: 'Chelsea' },
+      { value: 'columbia university', label: 'Columbia University' },
+      { value: 'dumbo',               label: 'Dumbo' },
+      { value: 'lower east side',     label: 'Lower East Side' },
+      { value: 'noho',                label: 'NoHo' },
+      { value: 'smith st',            label: 'Smith St' },
+      { value: 'soho',                label: 'SoHo' },
+      { value: 'union square',        label: 'Union Square' },
+      { value: 'upper east side',     label: 'Upper East Side' },
+      { value: 'upper west side',     label: 'Upper West Side' },
+      { value: 'williamsburg',        label: 'Williamsburg' },
     ];
     const NYC_LOCATION_VALUES = new Set(NYC_LOCATIONS.map(l => l.value));
+
+    // Address + Maps URL for every store, keyed by extractStore() value
+    const STORE_INFO = {
+      // New York
+      'chelsea':             { address: '142 W 26th St, New York, NY 10001',             maps: 'https://www.google.com/maps/search/142+W+26th+St+New+York+NY+10001' },
+      'columbia university': { address: '2875 Broadway, New York, NY 10025',             maps: 'https://www.google.com/maps/search/2875+Broadway+New+York+NY+10025' },
+      'dumbo':               { address: '70 Front St, Brooklyn, NY 11201',               maps: 'https://www.google.com/maps/search/70+Front+St+Brooklyn+NY+11201' },
+      'lower east side':     { address: '180 Orchard St, New York, NY 10002',            maps: 'https://www.google.com/maps/search/180+Orchard+St+New+York+NY+10002' },
+      'noho':                { address: '712 Broadway, New York, NY 10003',              maps: 'https://www.google.com/maps/search/712+Broadway+New+York+NY+10003' },
+      'smith st':            { address: '192 Smith St, Brooklyn, NY 11201',              maps: 'https://www.google.com/maps/search/192+Smith+St+Brooklyn+NY+11201' },
+      'soho':                { address: '27 Howard St, New York, NY 10013',              maps: 'https://www.google.com/maps/search/27+Howard+St+New+York+NY+10013' },
+      'union square':        { address: '110 University Pl, New York, NY 10003',         maps: 'https://www.google.com/maps/search/110+University+Pl+New+York+NY+10003' },
+      'upper east side':     { address: '1282 3rd Ave, New York, NY 10021',              maps: 'https://www.google.com/maps/search/1282+3rd+Ave+New+York+NY+10021' },
+      'upper west side':     { address: '2519 Broadway, New York, NY 10025',             maps: 'https://www.google.com/maps/search/2519+Broadway+New+York+NY+10025' },
+      'williamsburg':        { address: '187 Kent Ave, Brooklyn, NY 11249',              maps: 'https://www.google.com/maps/search/187+Kent+Ave+Brooklyn+NY+11249' },
+      // Arizona
+      'norterra':            { address: '2480 W Happy Valley Rd, Phoenix, AZ 85085',     maps: 'https://www.google.com/maps/search/2480+W+Happy+Valley+Rd+Phoenix+AZ+85085' },
+      // California
+      'melrose':             { address: '7560 Melrose Ave, Los Angeles, CA 90046',       maps: 'https://www.google.com/maps/search/7560+Melrose+Ave+Los+Angeles+CA+90046' },
+      'pasadena':            { address: '113 W Colorado Blvd, Pasadena, CA 91105',       maps: 'https://www.google.com/maps/search/113+W+Colorado+Blvd+Pasadena+CA+91105' },
+      'costa mesa':          { address: '2937 Bristol St, Costa Mesa, CA 92626',         maps: 'https://www.google.com/maps/search/2937+Bristol+St+Costa+Mesa+CA+92626' },
+      'torrance':            { address: '20792 Hawthorne Blvd, Torrance, CA 90503',      maps: 'https://www.google.com/maps/search/20792+Hawthorne+Blvd+Torrance+CA+90503' },
+      'sherman oaks':        { address: '14548 Ventura Blvd, Sherman Oaks, CA 91403',    maps: 'https://www.google.com/maps/search/14548+Ventura+Blvd+Sherman+Oaks+CA+91403' },
+      'haight st':           { address: '1560 Haight St, San Francisco, CA 94117',       maps: 'https://www.google.com/maps/search/1560+Haight+St+San+Francisco+CA+94117' },
+      'santa monica':        { address: '2936 Main St, Santa Monica, CA 90405',          maps: 'https://www.google.com/maps/search/2936+Main+St+Santa+Monica+CA+90405' },
+      'stanton':             { address: '12809 Beach Blvd, Stanton, CA 90680',           maps: 'https://www.google.com/maps/search/12809+Beach+Blvd+Stanton+CA+90680' },
+      'long beach':          { address: '5025 E 2nd St, Long Beach, CA 90803',           maps: 'https://www.google.com/maps/search/5025+E+2nd+St+Long+Beach+CA+90803' },
+      'stonestown galleria': { address: '3251 20th Ave, San Francisco, CA 94132',        maps: 'https://www.google.com/maps/search/3251+20th+Ave+San+Francisco+CA+94132' },
+      'westwood':            { address: '1100 Westwood Blvd, Los Angeles, CA 90024',     maps: 'https://www.google.com/maps/search/1100+Westwood+Blvd+Los+Angeles+CA+90024' },
+      'strawberry park':     { address: '603 Saratoga Ave, San Jose, CA 95129',          maps: 'https://www.google.com/maps/search/603+Saratoga+Ave+San+Jose+CA+95129' },
+      'davis':               { address: '855 Russell Blvd, Davis, CA 95616',             maps: 'https://www.google.com/maps/search/855+Russell+Blvd+Davis+CA+95616' },
+      // Colorado
+      'south broadway':      { address: '99 S Broadway, Denver, CO 80209',               maps: 'https://www.google.com/maps/search/99+S+Broadway+Denver+CO+80209' },
+      'rino':                { address: '2628 Walnut St, Denver, CO 80205',              maps: 'https://www.google.com/maps/search/2628+Walnut+St+Denver+CO+80205' },
+      'pearl st':            { address: '1543 Pearl St, Boulder, CO 80302',              maps: 'https://www.google.com/maps/search/1543+Pearl+St+Boulder+CO+80302' },
+      // Connecticut
+      'yale':                { address: '272 Elm St, New Haven, CT 06511',               maps: 'https://www.google.com/maps/search/272+Elm+St+New+Haven+CT+06511' },
+      'westport':            { address: '17 Main St, Westport, CT 06880',                maps: 'https://www.google.com/maps/search/17+Main+St+Westport+CT+06880' },
+      // Georgia
+      'ponce':               { address: '1057 Ponce De Leon Ave NE, Atlanta, GA 30306',  maps: 'https://www.google.com/maps/search/1057+Ponce+De+Leon+Ave+NE+Atlanta+GA+30306' },
+      'roswell':             { address: '1425 Market Blvd, Roswell, GA 30076',           maps: 'https://www.google.com/maps/search/1425+Market+Blvd+Roswell+GA+30076' },
+      // Illinois
+      'lincoln park':        { address: '666 W Diversey Pkwy, Chicago, IL 60657',        maps: 'https://www.google.com/maps/search/666+W+Diversey+Pkwy+Chicago+IL+60657' },
+      'wicker park':         { address: '1514 N Milwaukee Ave, Chicago, IL 60622',       maps: 'https://www.google.com/maps/search/1514+N+Milwaukee+Ave+Chicago+IL+60622' },
+      'andersonville':       { address: '5228 N Clark St, Chicago, IL 60640',            maps: 'https://www.google.com/maps/search/5228+N+Clark+St+Chicago+IL+60640' },
+      // Massachusetts
+      'burlington mall':     { address: '75 Middlesex Turnpike, Burlington, MA 01803',   maps: 'https://www.google.com/maps/search/75+Middlesex+Turnpike+Burlington+MA+01803' },
+      'coolidge corner':     { address: '301 Harvard St, Brookline, MA 02446',           maps: 'https://www.google.com/maps/search/301+Harvard+St+Brookline+MA+02446' },
+      'harvard square':      { address: '1 Brattle Square, Cambridge, MA 02138',         maps: 'https://www.google.com/maps/search/1+Brattle+Square+Cambridge+MA+02138' },
+      // New Jersey
+      'montclair':           { address: '10 S Park St, Montclair, NJ 07042',             maps: 'https://www.google.com/maps/search/10+S+Park+St+Montclair+NJ+07042' },
+      'westfield':           { address: '167 E Broad St, Westfield, NJ 07090',           maps: 'https://www.google.com/maps/search/167+E+Broad+St+Westfield+NJ+07090' },
+      'hoboken':             { address: '200 Washington St, Hoboken, NJ 07030',          maps: 'https://www.google.com/maps/search/200+Washington+St+Hoboken+NJ+07030' },
+      'morristown':          { address: '45 Market St, Morristown, NJ 07960',            maps: 'https://www.google.com/maps/search/45+Market+St+Morristown+NJ+07960' },
+      // North Carolina
+      'plaza midwood':       { address: '1401 Central Ave, Charlotte, NC 28205',         maps: 'https://www.google.com/maps/search/1401+Central+Ave+Charlotte+NC+28205' },
+      // Oregon
+      'hawthorne-portland':  { address: '3735 SE Hawthorne Blvd, Portland, OR 97214',   maps: 'https://www.google.com/maps/search/3735+SE+Hawthorne+Blvd+Portland+OR+97214' },
+      'portland downtown':   { address: '820 SW Washington St, Portland, OR 97205',      maps: 'https://www.google.com/maps/search/820+SW+Washington+St+Portland+OR+97205' },
+      // Pennsylvania
+      'chestnut st':         { address: '1606 Chestnut St, Philadelphia, PA 19103',      maps: 'https://www.google.com/maps/search/1606+Chestnut+St+Philadelphia+PA+19103' },
+      'south st':            { address: '501 South St, Philadelphia, PA 19147',          maps: 'https://www.google.com/maps/search/501+South+St+Philadelphia+PA+19147' },
+      'roosevelt mall':      { address: '2329 Cottman Ave, Philadelphia, PA 19149',      maps: 'https://www.google.com/maps/search/2329+Cottman+Ave+Philadelphia+PA+19149' },
+      // Texas
+      'cedar park':          { address: '1335 E Whitestone Blvd, Cedar Park, TX 78613',  maps: 'https://www.google.com/maps/search/1335+E+Whitestone+Blvd+Cedar+Park+TX+78613' },
+      'deep ellum':          { address: '2816 Main St, Dallas, TX 75226',                maps: 'https://www.google.com/maps/search/2816+Main+St+Dallas+TX+75226' },
+      'frisco':              { address: '3333 Preston Rd, Frisco, TX 75034',             maps: 'https://www.google.com/maps/search/3333+Preston+Rd+Frisco+TX+75034' },
+      'lower greenville':    { address: '2004 Greenville Ave, Dallas, TX 75206',         maps: 'https://www.google.com/maps/search/2004+Greenville+Ave+Dallas+TX+75206' },
+      'sunset valley':       { address: '5601 Brodie Lane, Austin, TX 78745',            maps: 'https://www.google.com/maps/search/5601+Brodie+Lane+Austin+TX+78745' },
+      'fort worth':          { address: '921 Foch St, Fort Worth, TX 76107',             maps: 'https://www.google.com/maps/search/921+Foch+St+Fort+Worth+TX+76107' },
+      'the drag':            { address: '2304 Guadalupe St, Austin, TX 78705',           maps: 'https://www.google.com/maps/search/2304+Guadalupe+St+Austin+TX+78705' },
+      'rice village':        { address: '2455 Rice Blvd, Houston, TX 77005',             maps: 'https://www.google.com/maps/search/2455+Rice+Blvd+Houston+TX+77005' },
+    };
 
     let allProducts = [];
     let activeFilter = 'all';
@@ -799,12 +875,10 @@
     function updateMapBar() {
       const bar = document.getElementById('map-bar');
       const link = document.getElementById('map-link');
-      const loc = nycOnly && activeLocation !== 'all'
-        ? NYC_LOCATIONS.find(l => l.value === activeLocation)
-        : null;
-      if (loc) {
-        link.href = loc.maps;
-        link.textContent = loc.address;
+      const info = activeLocation !== 'all' ? STORE_INFO[activeLocation] : null;
+      if (info) {
+        link.href = info.maps;
+        link.textContent = info.address;
         bar.style.display = 'block';
       } else {
         bar.style.display = 'none';
